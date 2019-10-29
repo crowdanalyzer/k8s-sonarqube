@@ -1,3 +1,28 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: claim-postgres
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 8Gi
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: pv0001
+  labels:
+    type: local
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: /data/postgresql/
+---
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -24,11 +49,24 @@ spec:
           ports:
             - containerPort: 5432
               name: postgresport
+          resources:
+          # TODO
           volumeMounts:
-            # This name must match the volumes.name below.
             - name: data-disk
               mountPath: /var/lib/postgresql/data
       volumes:
         - name: data-disk
           persistentVolumeClaim:
             claimName: claim-postgres
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    name: sonar-postgres
+  name: sonar-postgres
+spec:
+  ports:
+    - port: 5432
+  selector:
+    name: sonar-postgres

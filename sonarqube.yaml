@@ -26,3 +26,20 @@ spec:
           ports:
             - containerPort: 9000
               name: sonarqube
+          resources:
+            # TODO
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    name: sonar
+  name: sonar
+spec:
+  type: NodePort
+  ports:
+    - port: 80
+      targetPort: 9000
+      name: sonarport
+  selector:
+    name: sonarqube

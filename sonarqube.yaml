@@ -10,6 +10,15 @@ spec:
       labels:
         name: sonarqube
     spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                - key: kops.k8s.io/instancegroup
+                  operator: In
+                  values:
+                    - cost-optimized-nodes
       containers:
         - image: sonarqube:latest
           args:
@@ -27,7 +36,12 @@ spec:
             - containerPort: 9000
               name: sonarqube
           resources:
-            # TODO
+            requests:
+              memory: 512Mi
+              cpu: 200m
+            limits:
+              memory: 1Gi
+              cpu: 400m
 ---
 apiVersion: v1
 kind: Service
@@ -36,10 +50,25 @@ metadata:
     name: sonar
   name: sonar
 spec:
-  type: NodePort
+  type: ClusterIP
   ports:
     - port: 80
       targetPort: 9000
       name: sonarport
   selector:
     name: sonarqube
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: sonar-ui
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  rules:
+    - host: sonar-ui-plugins.sia.crowdanalyzer.com
+      http:
+        paths:
+          - backend:
+              serviceName: sonar
+              servicePort: 80

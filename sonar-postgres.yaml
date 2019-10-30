@@ -9,20 +9,6 @@ spec:
     requests:
       storage: 8Gi
 ---
-kind: PersistentVolume
-apiVersion: v1
-metadata:
-  name: pv0001
-  labels:
-    type: local
-spec:
-  capacity:
-    storage: 10Gi
-  accessModes:
-    - ReadWriteOnce
-  hostPath:
-    path: /data/postgresql/
----
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -35,6 +21,15 @@ spec:
       labels:
         name: sonar-postgres
     spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                - key: kops.k8s.io/instancegroup
+                  operator: In
+                  values:
+                    - cost-optimized-nodes
       containers:
         - image: postgres:latest
           name: sonar-postgres
@@ -50,10 +45,16 @@ spec:
             - containerPort: 5432
               name: postgresport
           resources:
-          # TODO
+            requests:
+              memory: 512Mi
+              cpu: 200m
+            limits:
+              memory: 1Gi
+              cpu: 400m
           volumeMounts:
             - name: data-disk
-              mountPath: /var/lib/postgresql/data
+              mountPath: /var/lib/postgresql
+              subPath: data
       volumes:
         - name: data-disk
           persistentVolumeClaim:
